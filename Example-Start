@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Define server URLs
+SERVER1="http://makululinux.eu"
+SERVER2="http://makulu.mooo.com"
+SCRIPT_PATH="/video-generator/Video-Gen.py"
+
+# Define the local directory path
+LOCAL_DIR="/usr/share/Image-Generator/makulu"
+
+# Function to download the script using curl
+download_script() {
+    local SERVER_URL=$1
+    echo "Attempting to download from $SERVER_URL..."
+
+    # Download the script using curl
+    x-terminal-emulator -e "cd ${LOCAL_DIR} && curl -O ${SERVER_URL}${SCRIPT_PATH}"
+
+    # Check if the download succeeded
+    if [[ $? -eq 0 ]]; then
+        echo "Download from $SERVER_URL successful."
+        return 0
+    else
+        echo "Download from $SERVER_URL failed."
+        return 1
+    fi
+}
+
+# Change to the desired directory
+cd ${LOCAL_DIR}
+
+# Try to download from SERVER1, if it fails, try SERVER2
+download_script "$SERVER1" || download_script "$SERVER2"
+
+# If the script was downloaded successfully, run it
+if [[ -f "${LOCAL_DIR}/Video-Gen.py" ]]; then
+    python3 Video-Gen.py
+else
+    echo "Script download failed from both servers. Exiting..."
+fi
+
+exit 0
