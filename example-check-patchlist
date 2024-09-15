@@ -1,0 +1,74 @@
+#!/bin/bash
+
+##################################################
+# Created By : Jacque Montague Raymer            #
+# Owner/Developer on MakuluLinux Copyright @2014 #
+# Website : www.makululinux.com                  #
+# Email : raymerjacque@gmail.com                 #
+##################################################
+
+#Check current User
+username=${USER:=$(/usr/bin/id -run)}
+
+# Define server URLs
+SERVER1="http://makululinux.eu"
+SERVER2="http://makulu.mooo.com"
+
+# Define directory paths for rsync-debian
+RSYNC_PATH="/rsync-debian/x/patch-number/"
+
+# Define a function to download from the server
+download_from_server() {
+    local SERVER_URL=$1
+    echo "Attempting to download from $SERVER_URL..."
+
+    # Try to sync the patch-number file
+    wget -r -nH -l1 --no-parent --reject "index.html*" "${SERVER_URL}${RSYNC_PATH}" -P /usr/share/MakuluSetup/
+    
+    # Check if the download succeeded
+    if [[ $? -eq 0 ]]; then
+        echo "Download from $SERVER_URL successful."
+        return 0
+    else
+        echo "Download from $SERVER_URL failed."
+        return 1
+    fi
+}
+
+#### Lets Change Directories
+cd /usr/share/MakuluSetup/
+
+#### Lets remove old patch Directories
+sudo rm -r /usr/share/MakuluSetup/rsync-debian
+
+#### Try downloading from SERVER1, if it fails, try SERVER2
+download_from_server "$SERVER1" || download_from_server "$SERVER2"
+
+####Lets remove the Old Start File :
+sudo rm -f /usr/share/MakuluSetup/update-status
+
+####Lets copy over new files if download succeeded
+if [[ -f /usr/share/MakuluSetup/rsync-debian/x/patch-number/update-status ]]; then
+    cp -f /usr/share/MakuluSetup/rsync-debian/x/patch-number/update-status /usr/share/MakuluSetup/update-status
+    cp -f /usr/share/MakuluSetup/rsync-debian/x/patch-number/5-patcher-rsync /usr/share/MakuluSetup/5-patcher-rsync
+    cp -f /usr/share/MakuluSetup/rsync-debian/x/patch-number/quick-patch /usr/share/MakuluSetup/quick-patch
+    cp -f /usr/share/MakuluSetup/rsync-debian/x/patch-number/patchnotes.png /usr/share/MakuluSetup/patchnotes.png
+
+    #### Lets set execute permissions on Files :
+    chmod u+wrx update-status
+    chmod u+wrx 5-patcher-rsync
+    chmod u+wrx quick-patch
+
+    #### Lets kill existing status script
+    killall update-status 2>/dev/null
+
+    #### Lets execute the start file
+    /usr/share/MakuluSetup/quick-patch
+    /usr/share/MakuluSetup/update-status
+else
+    echo "Download from both servers failed. Exiting..."
+fi
+
+exit 0
+
+######################
